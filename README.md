@@ -1,6 +1,6 @@
 # AI-Powered Student Placement Predictor 🎓
 
-A modern, full-stack Python Flask web application that stores student academic records, predicts placement outcomes using Machine Learning (Random Forest), and performs **real-time AI skill gap analysis and course recommendations powered by Google Gemini AI**.
+A modern, full-stack Python Flask web application that stores student academic records, predicts placement outcomes using Machine Learning (Random Forest), and performs **real-time AI skill gap analysis and course recommendations**.
 
 ---
 
