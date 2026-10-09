@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Marks & Skills</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="padding: 20px; max-width: 600px; margin: 0 auto;">
+        <nav>
+            <span>🎓 Placement Predictor</span>
+            <div>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="result.html">Results</a>
+                <a onclick="logout()" style="cursor:pointer; color:red;">Logout</a>
+            </div>
+        </nav>
+
+        <div class="container" style="margin: 0;">
+            <h1>📝 Enter Your Details</h1>
+            <p class="subtitle">Fill in your academic details</p>
+
+            <div class="form-group">
+                <label>CGPA (out of 10)</label>
+                <input type="number" id="cgpa" step="0.01" 
+                       min="0" max="10" placeholder="e.g. 9.04"/>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Internships</label>
+                <input type="number" id="internships" min="0" placeholder="e.g. 2"/>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Projects</label>
+                <input type="number" id="projects" min="0" placeholder="e.g. 3"/>
+            </div>
+
+            <div class="form-group">
+                <label>Number of Backlogs</label>
+                <input type="number" id="backlogs" min="0" placeholder="e.g. 0"/>
+            </div>
+
+            <div class="form-group">
+                <label>Skills (comma separated)</label>
+                <input type="text" id="skills" 
+                       placeholder="e.g. Java, Python, SQL, React.js"/>
+            </div>
+
+            <button onclick="saveData()">💾 Save My Details</button>
+            <div id="message" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = '/api';
+        const email = localStorage.getItem('email');
+
+        if (!email) window.location.href = 'login.html';
+
+        window.addEventListener('DOMContentLoaded', loadExistingData);
+
+        async function loadExistingData() {
+            try {
+                const response = await fetch(`${BASE_URL}/student/get/${encodeURIComponent(email)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data) {
+                        if (data.cgpa !== undefined && data.cgpa !== null) {
+                            document.getElementById('cgpa').value = data.cgpa;
+                        }
+                        if (data.internships !== undefined && data.internships !== null) {
+                            document.getElementById('internships').value = data.internships;
+                        }
+                        if (data.projects !== undefined && data.projects !== null) {
+                            document.getElementById('projects').value = data.projects;
+                        }
+                        if (data.backlogs !== undefined && data.backlogs !== null) {
+                            document.getElementById('backlogs').value = data.backlogs;
+                        }
+                        if (Array.isArray(data.skills) && data.skills.length > 0) {
+                            document.getElementById('skills').value = data.skills.join(', ');
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not load existing student details:', err);
+            }
+        }
+
+        async function saveData() {
+            const cgpaStr = document.getElementById('cgpa').value.trim();
+            const internshipsStr = document.getElementById('internships').value.trim();
+            const projectsStr = document.getElementById('projects').value.trim();
+            const backlogsStr = document.getElementById('backlogs').value.trim();
+
+            if (!cgpaStr || !internshipsStr || !projectsStr || !backlogsStr) {
+                showMessage('Please fill in all academic fields (CGPA, Internships, Projects, Backlogs).', 'error');
+                return;
+            }
+
+            const cgpa = parseFloat(cgpaStr);
+            const internships = parseInt(internshipsStr, 10);
+            const projects = parseInt(projectsStr, 10);
+            const backlogs = parseInt(backlogsStr, 10);
+
+            if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) {
+                showMessage('Please enter a valid CGPA between 0.0 and 10.0.', 'error');
+                return;
+            }
+            if (isNaN(internships) || internships < 0 || isNaN(projects) || projects < 0 || isNaN(backlogs) || backlogs < 0) {
+                showMessage('Internships, projects, and backlogs must be non-negative whole numbers.', 'error');
+                return;
+            }
+
+            const skillsInput = document.getElementById('skills').value;
+            const skills = skillsInput.split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            try {
+                const response = await fetch(`${BASE_URL}/student/save`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, cgpa, internships, projects, backlogs, skills })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (response.ok) {
+                    showMessage(data.message || 'Details saved successfully! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = 'result.html', 1200);
+                } else {
+                    showMessage(data.error || 'Failed to save data!', 'error');
+                }
+            } catch (error) {
+                showMessage('Failed to save data due to connection error!', 'error');
+            }
+        }
+
+        function showMessage(msg, type) {
+            const el = document.getElementById('message');
+            el.textContent = msg;
+            el.className = `message ${type}`;
+            el.style.display = 'block';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

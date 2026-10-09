@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Predictor - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Placement Predictor</h1>
+        <p class="subtitle">AI-Powered Career Guidance System</p>
+
+        <div class="form-group">
+            <label>Full Name (Register only)</label>
+            <input type="text" id="name" placeholder="Enter your name"/>
+        </div>
+
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email"/>
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter your password"/>
+        </div>
+
+        <button onclick="login()">Login</button>
+        <button onclick="register()" style="background: #28a745; margin-top: 10px;">
+            Register
+        </button>
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        const BASE_URL = '/api';
+
+        async function login() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showMessage('Please enter both email and password.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('email', data.email);
+                    localStorage.setItem('name', data.name);
+                    showMessage('Login successful! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                } else {
+                    showMessage(data.error || 'Invalid email or password!', 'error');
+                }
+            } catch (error) {
+                showMessage('Connection error! Could not reach the server.', 'error');
+            }
+        }
+
+        async function register() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!name || !email || !password) {
+                showMessage('Please enter your full name, email, and password to register.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (response.ok) {
+                    showMessage(data.message || 'Registration successful! You can now log in.', 'success');
+                } else {
+                    showMessage(data.error || 'Registration failed!', 'error');
+                }
+            } catch (error) {
+                showMessage('Registration failed due to connection error!', 'error');
+            }
+        }
+
+        function showMessage(msg, type) {
+            const el = document.getElementById('message');
+            el.textContent = msg;
+            el.className = `message ${type}`;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Placement Results</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="padding: 20px; max-width: 700px; margin: 0 auto;">
+        <nav>
+            <span>🎓 Placement Predictor</span>
+            <div>
+                <a href="dashboard.html">Dashboard</a>
+                <a href="marks.html">Edit Details</a>
+                <a onclick="logout()" style="cursor:pointer; color:red;">Logout</a>
+            </div>
+        </nav>
+
+        <!-- Prediction Result -->
+        <div id="predictionBox"></div>
+
+        <!-- Skill Gap & Live Company Analysis -->
+        <div class="card" style="border-left: 5px solid #28a745;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom:10px;">
+                <h3>🤖 Live AI Skill Gap & Company Market Analysis</h3>
+                <span id="aiBadge" class="badge badge-green" style="display:none;">✨ Powered by Gemini AI</span>
+            </div>
+            <p style="color:#666; font-size:13px; margin-bottom:15px;">
+                Target <strong>any company in the world</strong> (Google, Amazon, Nvidia, TCS, Startups) and get up-to-date daily skill requirements & tailored courses.
+            </p>
+
+            <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                <input type="text" id="targetCompany" placeholder="Enter Company Name (e.g. Google, Amazon, TCS, Uber...)" value="Google"
+                       style="flex:2; min-width:180px; padding:10px 12px; border:2px solid #667eea; border-radius:8px;" />
+                <input type="text" id="targetRole" placeholder="Role (e.g. Software Engineer)" value="Software Engineer"
+                       style="flex:1; min-width:140px; padding:10px 12px; border:2px solid #ccc; border-radius:8px;" />
+                <button onclick="runLiveAiAnalysis()" style="width:auto; margin:0; padding:10px 20px; background:linear-gradient(135deg, #11998e, #38ef7d);">
+                    🔍 Analyze
+                </button>
+            </div>
+
+            <!-- Quick click suggestions -->
+            <div style="margin-bottom:15px; font-size:12px; color:#666;">
+                <strong>Popular:</strong>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('Google')">Google</span>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('Amazon')">Amazon</span>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('Microsoft')">Microsoft</span>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('TCS')">TCS</span>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('NVIDIA')">NVIDIA</span>
+                <span class="badge" style="cursor:pointer; background:#eef2ff; color:#4f46e5;" onclick="quickAnalyze('Tech Startup')">Startups</span>
+            </div>
+
+            <div id="aiStatus" style="display:none; padding:10px; background:#e0f2fe; color:#0369a1; border-radius:8px; margin-bottom:15px; font-weight:600;">
+                ⏳ Gemini AI is analyzing live market requirements...
+            </div>
+
+            <div id="skillGapResult"></div>
+        </div>
+
+        <!-- Learning Path -->
+        <div class="card">
+            <h3>📚 Recommended Learning Path</h3>
+            <div id="learningPath"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = '/api';
+        const email = localStorage.getItem('email');
+
+        if (!email) window.location.href = 'login.html';
+
+        window.onload = function() {
+            loadPrediction();
+            runLiveAiAnalysis('Google');
+        }
+
+        async function loadPrediction() {
+            try {
+                const response = await fetch(`${BASE_URL}/prediction/${encodeURIComponent(email)}`);
+                const data = await response.json();
+                const box = document.getElementById('predictionBox');
+
+                if (response.status === 404 || data.status === 'ERROR') {
+                    box.innerHTML = `
+                        <div class="result-box not-placed" style="background: linear-gradient(135deg, #e67e22, #f39c12);">
+                            <h2>📋 Details Needed</h2>
+                            <p>${data.message || 'Please enter your academic details first to generate a prediction.'}</p>
+                            <button onclick="window.location.href='marks.html'" 
+                                style="margin-top:15px; width:auto; padding:10px 25px; background:white; color:#333;">
+                                ✍️ Enter Details Now
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const isPlaced = data.status === 'PLACED';
+                box.innerHTML = `
+                    <div class="result-box ${isPlaced ? 'placed' : 'not-placed'}">
+                        <h2>${isPlaced ? '🎉 PLACED!' : '😔 NOT PLACED'}</h2>
+                        <p>${data.message}</p>
+                        <h3 style="margin-top:10px;">Probability: ${data.probability}%</h3>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('predictionBox').innerHTML = 
+                    '<p style="color:red; text-align:center;">Could not load prediction. Check server connection.</p>';
+            }
+        }
+
+        function quickAnalyze(companyName) {
+            document.getElementById('targetCompany').value = companyName;
+            runLiveAiAnalysis(companyName);
+        }
+
+        async function runLiveAiAnalysis(companyParam) {
+            const company = companyParam || document.getElementById('targetCompany').value.trim() || 'Google';
+            const role = document.getElementById('targetRole').value.trim() || 'Software Engineer';
+            const statusEl = document.getElementById('aiStatus');
+            const badgeEl = document.getElementById('aiBadge');
+            const resultEl = document.getElementById('skillGapResult');
+            const learningEl = document.getElementById('learningPath');
+
+            statusEl.style.display = 'block';
+            statusEl.textContent = `⏳ Analyzing 2026 market standards for ${company} (${role})...`;
+
+            try {
+                const res = await fetch(`${BASE_URL}/ai/skillgap/${encodeURIComponent(email)}?company=${encodeURIComponent(company)}&role=${encodeURIComponent(role)}`);
+                const data = await res.json();
+                statusEl.style.display = 'none';
+
+                // Badge display
+                badgeEl.style.display = 'inline-block';
+                if (data.isLiveAi) {
+                    badgeEl.textContent = '✨ Powered by Gemini AI (Live)';
+                    badgeEl.className = 'badge badge-green';
+                } else {
+                    badgeEl.textContent = '📚 Baseline Profile';
+                    badgeEl.className = 'badge badge-blue';
+                }
+
+                // Recruiter feedback
+                let html = '';
+                if (data.aiSummary) {
+                    html += `
+                        <div style="background:#f8fafc; border-left:4px solid #667eea; padding:10px 14px; border-radius:6px; margin-bottom:12px; font-size:13px; color:#334155;">
+                            💬 <strong>Recruiter Assessment:</strong> ${data.aiSummary}
+                        </div>
+                    `;
+                }
+
+                html += `<p><strong>Target:</strong> ${data.company} — <em>${data.role}</em></p>`;
+                html += `<p style="margin-top:5px;"><strong>Readiness:</strong> ${data.readinessLevel || 'Evaluated'}</p>`;
+
+                html += '<p style="margin-top:12px;"><strong>Your Current Skills:</strong></p>';
+                if (data.yourSkills && data.yourSkills.length > 0) {
+                    data.yourSkills.forEach(skill => {
+                        html += `<span class="badge badge-green">${skill}</span>`;
+                    });
+                } else {
+                    html += '<span style="color:#777; font-size:13px;">No skills added yet.</span>';
+                }
+
+                if (data.missingSkills && data.missingSkills.length > 0) {
+                    html += `<p style="margin-top:12px;"><strong>Required Skills Missing for ${data.company}:</strong></p>`;
+                    data.missingSkills.forEach(skill => {
+                        html += `<span class="badge badge-red">${skill}</span>`;
+                    });
+                } else {
+                    html += `<p style="margin-top:12px; color:green; font-weight:600;">✅ Excellent! You meet all core requirements for ${data.company}!</p>`;
+                }
+
+                if (!data.isLiveAi && data.note) {
+                    html += `
+                        <div style="margin-top:15px; padding:10px; background:#fffbeb; border:1px solid #fef3c7; border-radius:8px; font-size:12px; color:#92400e;">
+                            💡 <strong>Tip:</strong> ${data.note}
+                        </div>
+                    `;
+                }
+
+                resultEl.innerHTML = html;
+
+                // Render courses
+                renderCourses(data.recommendedCourses, data.company);
+            } catch (err) {
+                statusEl.style.display = 'none';
+                resultEl.innerHTML = '<p style="color:red;">Error fetching skill gap analysis.</p>';
+            }
+        }
+
+        function renderCourses(coursesMap, companyName) {
+            const learningEl = document.getElementById('learningPath');
+            if (!coursesMap || Object.keys(coursesMap).length === 0) {
+                learningEl.innerHTML = `<p style="color:green;">✅ You meet the skill criteria for ${companyName}! No additional courses required.</p>`;
+                return;
+            }
+
+            let html = '';
+            for (const [skill, courses] of Object.entries(coursesMap)) {
+                html += `<p style="margin-top:10px;"><strong>${skill}:</strong></p>`;
+                courses.forEach(course => {
+                    html += `
+                        <div style="background:white; padding:12px; border-radius:8px; margin:6px 0; box-shadow:0 1px 3px rgba(0,0,0,0.06); border:1px solid #eee;">
+                            <span class="badge badge-blue">${course.platform || 'Online'}</span>
+                            <strong>${course.courseName}</strong>
+                            <p style="font-size:12px; color:#666; margin:4px 0;">
+                                Duration: ${course.duration || 'Self-paced'}
+                            </p>
+                            <a href="${course.url}" target="_blank" 
+                               style="color:#667eea; font-size:13px; text-decoration:none; font-weight:600;">
+                               🔗 View Course & Start Learning &rarr;
+                            </a>
+                        </div>
+                    `;
+                });
+            }
+            learningEl.innerHTML = html;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="padding: 20px; max-width: 700px; margin: 0 auto;">
+        <nav>
+            <span>🎓 Placement Predictor</span>
+            <div>
+                <a href="marks.html">Enter Details</a>
+                <a href="result.html">View Results</a>
+                <a onclick="logout()" style="cursor:pointer; color:red;">Logout</a>
+            </div>
+        </nav>
+
+        <div class="container" style="margin: 0;">
+            <h1>👋 Welcome, <span id="studentName"></span>!</h1>
+            <p class="subtitle">Your AI-Powered Placement Dashboard</p>
+
+            <div class="dashboard-grid" style="margin-top: 30px;">
+                <div class="stat-card">
+                    <h3>🎯</h3>
+                    <p>Check your placement prediction</p>
+                    <button onclick="window.location.href='result.html'"
+                        style="margin-top:10px; padding:10px;">
+                        View Prediction
+                    </button>
+                </div>
+                <div class="stat-card">
+                    <h3>📝</h3>
+                    <p>Update your marks and skills</p>
+                    <button onclick="window.location.href='marks.html'"
+                        style="margin-top:10px; padding:10px;">
+                        Enter Details
+                    </button>
+                </div>
+                <div class="stat-card">
+                    <h3>📊</h3>
+                    <p>View your skill gap analysis</p>
+                    <button onclick="window.location.href='result.html'"
+                        style="margin-top:10px; padding:10px;">
+                        Skill Gap
+                    </button>
+                </div>
+                <div class="stat-card">
+                    <h3>📚</h3>
+                    <p>Get course recommendations</p>
+                    <button onclick="window.location.href='result.html'"
+                        style="margin-top:10px; padding:10px;">
+                        Learn Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const name = localStorage.getItem('name');
+        const email = localStorage.getItem('email');
+
+        if (!email) window.location.href = 'login.html';
+
+        document.getElementById('studentName').textContent = name;
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
